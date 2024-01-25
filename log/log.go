@@ -2,7 +2,10 @@ package log
 
 import (
 	"log/slog"
+	"os"
 	"sync/atomic"
+
+	"github.com/google/uuid"
 )
 
 var root atomic.Value
@@ -11,6 +14,29 @@ func CreateDefaultLogger(logdir string, name string) {
 	defaultLogger := newDefaultLogger(logdir, name)
 	root.Store(defaultLogger)
 	slog.SetDefault(defaultLogger)
+}
+
+func CreateDebugLogger(logdir string, name string) {
+	defaultLogger := newLogger(
+		logdir, name,
+		slog.LevelDebug, slog.LevelDebug,
+		os.Stdout,
+	)
+	root.Store(defaultLogger)
+	slog.SetDefault(defaultLogger)
+}
+
+// Subscribe subscribes to log events. The key identifies the subscription
+// and can be used to unsubscribe at a later stage.
+func Subscribe(level slog.Level, chnl chan slog.Record) (key string) {
+	key = uuid.NewString()
+	chnlHandler.Subscribe(key, level, chnl)
+	return
+}
+
+// Unsubscribe from a log event by giving the subscription key.
+func Unsubscribe(key string) {
+	chnlHandler.Unsubscribe(key)
 }
 
 /*

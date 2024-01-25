@@ -9,22 +9,29 @@ import (
 )
 
 type channelSubscription struct {
+	// The log level to subscribe to
 	level slog.Level
-	chnl  chan slog.Record
+	// The channel to send log records to
+	chnl chan slog.Record
 }
 
 type ChannelHandler struct {
+	// Map of subscriptions to channels
 	subscriptions *sync.Map
-	groups        []string
-	attrs         []slog.Attr
+	// List of groups
+	groups []string
+	// List of attributes
+	attrs []slog.Attr
 }
 
+// NewChannelHandler creates a new ChannelHandler struct and returns it.
 func NewChannelHandler() slog.Handler {
 	return &ChannelHandler{
 		subscriptions: &sync.Map{},
 	}
 }
 
+// Handle forwards the log record on the subcribed channels.
 func (h *ChannelHandler) Handle(ctx context.Context, r slog.Record) error {
 	rec := r.Clone()
 	rec.AddAttrs(h.attrs...)
@@ -46,6 +53,7 @@ func (h *ChannelHandler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
+// Enabled checks if the channel handler is enabled for a given log level
 func (h *ChannelHandler) Enabled(_ context.Context, l slog.Level) bool {
 	ok := false
 	h.subscriptions.Range(func(k, v any) bool {
@@ -59,6 +67,7 @@ func (h *ChannelHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return ok
 }
 
+// WithGroup creates a new handler with the given group name
 func (h *ChannelHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return h
@@ -77,6 +86,7 @@ func (h *ChannelHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
+// WithAttrs takes a slice of Attrs as parameters and returns a Handler.
 func (h *ChannelHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return h
@@ -104,6 +114,8 @@ func (h *ChannelHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
+// Subscribe is used to subscribe to a channel. It takes a string key,
+// a slog.Level level, and a channel of slog.Records as parameters.
 func (h *ChannelHandler) Subscribe(
 	key string,
 	level slog.Level,
@@ -115,6 +127,7 @@ func (h *ChannelHandler) Subscribe(
 	})
 }
 
+// Unsubscribe is used to unsubscribe a key from the channel handler
 func (h *ChannelHandler) Unsubscribe(key string) {
 	h.subscriptions.Delete(key)
 }

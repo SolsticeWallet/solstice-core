@@ -3,7 +3,6 @@ package utils
 import (
 	"crypto/rand"
 	"errors"
-	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -68,20 +67,54 @@ func NewSeedFromMnemonic(mnemonic string, passOpt ...string) ([]byte, error) {
 	return bip39.NewSeedWithErrorChecking(mnemonic, password)
 }
 
+// Wei2Eth converts the provided number of wei's to Eth
 func Wei2Eth(wei *big.Int) *big.Float {
 	if wei == nil {
 		return nil
 	}
-	fwei := new(big.Float)
-	fwei.SetString(wei.String())
-	return new(big.Float).Quo(fwei, big.NewFloat(math.Pow10(18)))
+	eth := new(big.Float).SetInt(wei)
+	eth.Quo(eth, big.NewFloat(1e18))
+	return eth
 }
 
+func Wei2GWei(wei *big.Int) *big.Float {
+	if wei == nil {
+		return nil
+	}
+	fwei := new(big.Float).SetInt(wei)
+	return new(big.Float).Quo(fwei, big.NewFloat(1e9))
+}
+
+// GWei2Eth converts the provided number of gwei's to Eth
+func GWei2Eth(gwei *big.Float) *big.Float {
+	if gwei == nil {
+		return nil
+	}
+	eth := new(big.Float).SetPrec(256)
+	eth.Quo(gwei, big.NewFloat(1e9))
+	return eth
+}
+
+// GWei2Wei converts a value from Gwei to Wei.
+//
+// gwei *big.Float
+// *big.Int
+func GWei2Wei(gwei *big.Float) *big.Int {
+	if gwei == nil {
+		return nil
+	}
+	fwei := new(big.Float).Quo(gwei, big.NewFloat(1e-9))
+	result := new(big.Int)
+	fwei.Int(result)
+	return result
+}
+
+// Eth to Wei converts the provided number of eth to wei.
 func Eth2Wei(eth *big.Float) *big.Int {
 	if eth == nil {
 		return nil
 	}
-	fwei := new(big.Float).Quo(eth, big.NewFloat(math.Pow10(-18)))
+	fwei := new(big.Float).Quo(eth, big.NewFloat(1e-18))
 	result := new(big.Int)
 	fwei.Int(result)
 	return result

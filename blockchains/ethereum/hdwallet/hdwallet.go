@@ -43,6 +43,9 @@ type Wallet struct {
 	stateLock sync.RWMutex
 }
 
+// newWallet creates a new Wallet using the provided seed.
+//
+// It takes a seed []byte as a parameter and returns a *Wallet and an error.
 func newWallet(seed []byte) (*Wallet, error) {
 	masterKey, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
 	if err != nil {

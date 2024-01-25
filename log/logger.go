@@ -11,6 +11,8 @@ func init() {
 	chnlHandler = NewChannelHandler().(*ChannelHandler)
 }
 
+// newDefaultLogger Create a new logger with the given log directory and
+// log name.
 func newDefaultLogger(logdir string, logname string) *slog.Logger {
 	return newLogger(
 		logdir, logname,
@@ -19,6 +21,8 @@ func newDefaultLogger(logdir string, logname string) *slog.Logger {
 	)
 }
 
+// newLogger Creates a new logger with the given log directory, log name,
+// terminal log level, file log level and terminal output file handle.
 func newLogger(
 	logdir string,
 	logname string,
@@ -48,12 +52,4 @@ func newLogger(
 	)
 
 	return slog.New(NewDispatchHandler(handlers...))
-}
-
-func Subscribe(key string, level slog.Level, chnl chan slog.Record) {
-	chnlHandler.Subscribe(key, level, chnl)
-}
-
-func Unsubscribe(key string) {
-	chnlHandler.Unsubscribe(key)
 }
