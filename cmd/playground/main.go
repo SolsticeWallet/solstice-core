@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/solsticewallet/solstice-core/blockchains"
 	"github.com/solsticewallet/solstice-core/blockchains/ethereum"
 	"github.com/solsticewallet/solstice-core/blockchains/ethereum/utils"
+	"github.com/solsticewallet/solstice-core/blockchains/networks"
 )
 
 const mnemonic = "slice vote elbow curtain write side give rural entire under pause common"
@@ -40,6 +43,10 @@ const (
 )
 
 func main() {
+	testWalletSaveLoad()
+}
+
+func testWalletSend() {
 	client, err := ethclient.Dial("http://127.0.0.1:7545")
 	if err != nil {
 		panic(err)
@@ -108,5 +115,43 @@ func main() {
 		panic(err)
 	}
 
+	json, err := json.Marshal(wallet)
+	if err != nil {
+		panic(err)
+	}
+	jsonStr := string(json)
+	fmt.Println(jsonStr)
+
 	fmt.Println("Transaction send")
+}
+
+func testWalletSaveLoad() {
+	wallet, err := blockchains.NewWallet(
+		blockchains.WalletOpts{
+			Network:    networks.Ethereum,
+			Mnemonic:   mnemonic,
+			Passphrase: "MyPassPhrase",
+			Encrypted:  true,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	err = wallet.Save("./testwallet.wlt", "Abc123")
+	if err != nil {
+		panic(err)
+	}
+
+	wallet2, err := blockchains.LoadWallet("./testwallet.wlt", "Abc123")
+	if err != nil {
+		panic(err)
+	}
+
+	err = wallet2.Save("./testwallet.wlt", "Abc123")
+	if err != nil {
+		panic(err)
+	}
+
+	_ = wallet2
 }

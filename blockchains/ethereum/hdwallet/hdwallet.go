@@ -34,13 +34,14 @@ var DefaultRootDerivationPath = accounts.DefaultRootDerivationPath
 var DefaultBaseDerivationPath = accounts.DefaultBaseDerivationPath
 
 type Wallet struct {
-	mnemonic  string
-	masterKey *hdkeychain.ExtendedKey
-	seed      []byte
-	url       accounts.URL
-	paths     map[common.Address]accounts.DerivationPath
-	accounts  []accounts.Account
-	stateLock sync.RWMutex
+	Mnemonic        string `json:"mnemonic"`
+	Passphrase      string `json:"passphrase"`
+	masterKey       *hdkeychain.ExtendedKey
+	seed            []byte
+	url             accounts.URL
+	Paths           map[common.Address]accounts.DerivationPath `json:"paths"`
+	TrackedAccounts []accounts.Account                         `json:"tracked_accounts"`
+	stateLock       sync.RWMutex
 }
 
 // newWallet creates a new Wallet using the provided seed.
@@ -53,10 +54,10 @@ func newWallet(seed []byte) (*Wallet, error) {
 	}
 
 	return &Wallet{
-		masterKey: masterKey,
-		seed:      seed,
-		accounts:  []accounts.Account{},
-		paths:     map[common.Address]accounts.DerivationPath{},
+		masterKey:       masterKey,
+		seed:            seed,
+		TrackedAccounts: []accounts.Account{},
+		Paths:           map[common.Address]accounts.DerivationPath{},
 	}, nil
 }
 
@@ -79,7 +80,10 @@ func NewFromMnemonic(mnemonic string, passOpt ...string) (*Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	wallet.mnemonic = mnemonic
+	wallet.Mnemonic = mnemonic
+	if len(passOpt) > 0 {
+		wallet.Passphrase = passOpt[0]
+	}
 
 	return wallet, nil
 }
@@ -93,7 +97,7 @@ func NewFromSeed(seed []byte) (*Wallet, error) {
 }
 
 // URL implements accounts.Wallet, returning the URL of the device that the
-// wallet is on, however this doew nothing since this is not a hardware device.
+// wallet is on, however this does nothing since this is not a hardware device.
 func (w *Wallet) URL() accounts.URL {
 	return w.url
 }
@@ -126,8 +130,8 @@ func (w *Wallet) Accounts() []accounts.Account {
 	w.stateLock.RLock()
 	defer w.stateLock.RUnlock()
 
-	cpy := make([]accounts.Account, len(w.accounts))
-	copy(cpy, w.accounts)
+	cpy := make([]accounts.Account, len(w.TrackedAccounts))
+	copy(cpy, w.TrackedAccounts)
 	return cpy
 }
 
@@ -137,7 +141,7 @@ func (w *Wallet) Contains(account accounts.Account) bool {
 	w.stateLock.RLock()
 	defer w.stateLock.RUnlock()
 
-	_, exists := w.paths[account.Address]
+	_, exists := w.Paths[account.Address]
 	return exists
 }
 
@@ -147,10 +151,10 @@ func (w *Wallet) Unpin(account accounts.Account) error {
 	defer w.stateLock.RUnlock()
 
 	addrStr := account.Address.String()
-	for i, acct := range w.accounts {
+	for i, acct := range w.TrackedAccounts {
 		if acct.Address.String() == addrStr {
-			w.accounts = removeAtIndex(w.accounts, i)
-			delete(w.paths, account.Address)
+			w.TrackedAccounts = removeAtIndex(w.TrackedAccounts, i)
+			delete(w.Paths, account.Address)
 			return nil
 		}
 	}
@@ -191,9 +195,9 @@ func (w *Wallet) Derive(
 	w.stateLock.Lock()
 	defer w.stateLock.Unlock()
 
-	if _, ok := w.paths[address]; !ok {
-		w.accounts = append(w.accounts, account)
-		w.paths[address] = path
+	if _, ok := w.Paths[address]; !ok {
+		w.TrackedAccounts = append(w.TrackedAccounts, account)
+		w.Paths[address] = path
 	}
 	return account, nil
 }
@@ -242,7 +246,7 @@ func (w *Wallet) SignHash(
 	account accounts.Account,
 	hash []byte,
 ) ([]byte, error) {
-	path, ok := w.paths[account.Address]
+	path, ok := w.Paths[account.Address]
 	if !ok {
 		return nil, accounts.ErrUnknownAccount
 	}
@@ -265,7 +269,7 @@ func (w *Wallet) SignTxEIP155(
 	w.stateLock.RLock()
 	defer w.stateLock.RUnlock()
 
-	path, ok := w.paths[account.Address]
+	path, ok := w.Paths[account.Address]
 	if !ok {
 		return nil, accounts.ErrUnknownAccount
 	}
@@ -306,7 +310,7 @@ func (w *Wallet) SignTx(
 	w.stateLock.RLock()
 	defer w.stateLock.RUnlock()
 
-	path, ok := w.paths[account.Address]
+	path, ok := w.Paths[account.Address]
 	if !ok {
 		return nil, accounts.ErrUnknownAccount
 	}

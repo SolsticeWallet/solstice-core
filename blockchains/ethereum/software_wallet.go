@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -10,10 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/solsticewallet/solstice-core/blockchains/ethereum/hdwallet"
 	"github.com/solsticewallet/solstice-core/blockchains/ethereum/utils"
+	"github.com/solsticewallet/solstice-core/blockchains/networks"
 )
 
 type SoftwareWallet struct {
-	WalletImp
+	WalletImp     `json:"wallet"`
+	WalletNetwork string `json:"network"`
+	WalletType    string `json:"wallet_type"`
 }
 
 func NewSoftwareWalletFromMnemonic(
@@ -26,19 +30,30 @@ func NewSoftwareWalletFromMnemonic(
 	}
 
 	return &SoftwareWallet{
-		WalletImp: imp,
+		WalletImp:     imp,
+		WalletNetwork: networks.Ethereum,
+		WalletType:    fmt.Sprintf("%T", imp),
 	}, nil
 }
 
-func NewSoftwareWalletFromSeed(seed []byte) (Wallet, error) {
+func NewSoftwareWalletFromSeed(
+	network string,
+	seed []byte,
+) (Wallet, error) {
 	imp, err := hdwallet.NewFromSeed(seed)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SoftwareWallet{
-		WalletImp: imp,
+		WalletImp:     imp,
+		WalletNetwork: networks.Ethereum,
+		WalletType:    fmt.Sprintf("%T", imp),
 	}, nil
+}
+
+func (w *SoftwareWallet) Network() string {
+	return networks.Ethereum
 }
 
 func (w *SoftwareWallet) AccountBalance(
